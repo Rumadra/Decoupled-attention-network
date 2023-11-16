@@ -6,7 +6,7 @@ from dataset_hw import *
 from DAN import *
 
 global_cfgs = {
-    'state': 'Test',
+    'state': 'Train',
     'epoch': 100,
     'show_interval': 50,
     'test_interval': 500
@@ -38,37 +38,40 @@ dataset_cfgs = {
         'num_workers': 2,
     },
 
-    'case_sensitive': True,
-    'dict_dir': 'dict/dic_79.txt'
+    'case_sensitive': False,
+    'dict_dir': 'dict/dic_techno.txt'
 }
 
 net_cfgs = {
     'FE': Feature_Extractor,
     'FE_args': {
         'strides': [(2,2), (2,2), (2,1), (2,2), (2,2), (2,1)],
+        # 'strides': [(2,2), (2,2), (2,1), (1,2), (1,1), (1,1)],
         'compress_layer' : True, 
         'input_shape': [1, 192, 2048], # C x H x W
     },
     'CAM': CAM_transposed,
     'CAM_args': {
-        'maxT': 150, 
+        # 'maxT': 150,
+        'maxT': 30, 
         'depth': 14, 
         'num_channels': 128,
+        # 'num_channels': 64,
     },
     'DTD': DTD,
     'DTD_args': {
-        'nclass': 80, # extra 2 classes for Unkonwn and End-token
+        'nclass': 1429, # extra 2 classes for Unknown and End-token
         'nchannel': 256,
         'dropout': 0.7,
     },
 
-    'init_state_dict_fe': 'models/hw/exp1_E99_I2000-2295_M0.pth',
-    'init_state_dict_cam': 'models/hw/exp1_E99_I2000-2295_M1.pth',
-    'init_state_dict_dtd': 'models/hw/exp1_E99_I2000-2295_M2.pth',
+    # 'init_state_dict_fe': 'models/hw/exp1_E99_I2000-2295_M0.pth',
+    # 'init_state_dict_cam': 'models/hw/exp1_E99_I2000-2295_M1.pth',
+    # 'init_state_dict_dtd': 'models/hw/exp1_E99_I2000-2295_M2.pth',
 
-    # 'init_state_dict_fe': None,
-    # 'init_state_dict_cam': None,
-    # 'init_state_dict_dtd': None,
+    'init_state_dict_fe': None,
+    'init_state_dict_cam': None,
+    'init_state_dict_dtd': None,
 }
 
 optimizer_cfgs = {
@@ -118,16 +121,12 @@ saving_cfgs = {
 }
 
 def mkdir(path_):
-    paths = path_.split('/')
-    command_str = 'mkdir '
-    for i in range(0, len(paths) - 1):
-        command_str = command_str + paths[i] + '/'
-    command_str = command_str[0:-1]
-    os.system(command_str)
+    if not os.path.exists(path_):
+        os.makedirs(path_)
 
 def showcfgs(s):
     for key in s.keys():
-        print(key , s[key])
+        print(key, s[key])
     print('')
 
 mkdir(saving_cfgs['saving_path'])

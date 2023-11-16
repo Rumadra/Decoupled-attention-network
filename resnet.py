@@ -52,10 +52,12 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(32)
         self.relu = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(block, 32, layers[0],stride=strides[1])
+        self.layer1 = self._make_layer(block, 32, layers[0], stride=strides[1])
         self.layer2 = self._make_layer(block, 64, layers[1], stride=strides[2])
         self.layer3 = self._make_layer(block, 128, layers[2], stride=strides[3])
         self.layer4 = self._make_layer(block, 256, layers[3], stride=strides[4])        
+        # 追加
+        # self.adaptive_pool = nn.AdaptiveAvgPool2d((12, 32))
         self.layer5 = self._make_layer(block, 512, layers[4], stride=strides[5])
 
         self.compress_layer = compress_layer        

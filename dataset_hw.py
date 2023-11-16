@@ -5,7 +5,7 @@ import numpy as np
 import os
 import torch
 import cv2
-import Augment
+import augment
 import random
 
 class LineGenerate():
@@ -15,7 +15,7 @@ class LineGenerate():
         self.conH = conH
         self.conW = conW
         standard = []
-        with open(IAMPath) as f:
+        with open(IAMPath, encoding='utf-8') as f:
             for line in f.readlines():
                 standard.append(line.strip('\n'))
         self.image = []
@@ -23,17 +23,22 @@ class LineGenerate():
         line_prefix = '/'.join(IAMPath.split('/')[:-1]) + '/lines'
         IAMLine = line_prefix + '.txt'
         count = 0
-        with open(IAMLine) as f:
+        with open(IAMLine, encoding='utf-8') as f:
             for line in f.readlines():
                 elements = line.split()
-                pth_ele = elements[0].split('-')
-                line_tag = '%s-%s' % (pth_ele[0], pth_ele[1])
-                if line_tag in standard:
-                    pth = line_prefix + '/%s/%s-%s/%s.png' % (pth_ele[0], pth_ele[0], pth_ele[1], elements[0])
-                    img= cv2.imread(pth, 0) #see channel and type
-                    self.image.append(img)
-                    self.label.append(elements[-1])
-                    count += 1
+                # pth_ele = elements[0].split('-')
+                # line_tag = '%s-%s' % (pth_ele[0], pth_ele[1])
+                # if line_tag in standard:
+                #     pth = line_prefix + '/%s/%s-%s/%s.png' % (pth_ele[0], pth_ele[0], pth_ele[1], elements[0])
+                #     img= cv2.imread(pth, 0) #see channel and type
+                #     self.image.append(img)
+                #     self.label.append(elements[-1])
+                #     count += 1
+                pth = elements[0]
+                img = cv2.imread(pth, 0)
+                self.image.append(img)
+                self.label.append(elements[-1])
+                count += 1
         self.len = count
         self.idx = 0
 
@@ -74,11 +79,11 @@ class LineGenerate():
         if self.augment and self.training:
             imageN = imageN.astype('uint8')
             if torch.rand(1) < 0.3:
-                imageN = Augment.GenerateDistort(imageN, random.randint(3, 8))
+                imageN = augment.distort(imageN, random.randint(3, 8))
             if torch.rand(1) < 0.3:
-                imageN = Augment.GenerateStretch(imageN, random.randint(3, 8))
+                imageN = augment.stretch(imageN, random.randint(3, 8))
             if torch.rand(1) < 0.3:
-                imageN = Augment.GeneratePerspective(imageN)
+                imageN = augment.perspective(imageN)
             
         imageN = imageN.astype('float32')
         imageN = (imageN-127.5)/127.5
@@ -99,21 +104,26 @@ class WordGenerate():
         word_prefix = '/'.join(IAMPath.split('/')[:-1]) + '/words'
         IAMWord = word_prefix + '.txt'
         count = 0
-        with open(IAMWord) as f:
+        with open(IAMWord, encoding='utf-8') as f:
             for line in f.readlines():
                 elements = line.split()
-                pth_ele = elements[0].split('-')
-                line_tag = '%s-%s' % (pth_ele[0], pth_ele[1])
-                if line_tag in standard:
-                    pth = word_prefix + '/%s/%s-%s/%s.png' % (pth_ele[0], pth_ele[0], pth_ele[1], elements[0])
-                    img= cv2.imread(pth, 0) #see channel and type
-                    if img is not None:
-                        self.image.append(img)
-                        self.label.append(elements[-1])
-                        count += 1
-                    else:
-                        print('error')
-                        continue;
+                # pth_ele = elements[0].split('-')
+                # line_tag = '%s-%s' % (pth_ele[0], pth_ele[1])
+                # if line_tag in standard:
+                #     pth = word_prefix + '/%s/%s-%s/%s.png' % (pth_ele[0], pth_ele[0], pth_ele[1], elements[0])
+                #     img= cv2.imread(pth, 0) #see channel and type
+                #     if img is not None:
+                #         self.image.append(img)
+                #         self.label.append(elements[-1])
+                #         count += 1
+                #     else:
+                #         print('error')
+                #         continue;
+                pth = elements[0]
+                img = cv2.imread(pth, 0)
+                self.image.append(img)
+                self.label.append(elements[-1])
+                count += 1
 
         self.len = count
 
@@ -149,11 +159,11 @@ class WordGenerate():
         imageN = imageN.astype('uint8')
         if self.augment:
             if torch.rand(1) < 0.3:
-                imageN = Augment.GenerateDistort(imageN, random.randint(3, 8))
+                imageN = augment.distort(imageN, random.randint(3, 8))
             if torch.rand(1) < 0.3:
-                imageN = Augment.GenerateStretch(imageN, random.randint(3, 8))
+                imageN = augment.stretch(imageN, random.randint(3, 8))
             if torch.rand(1) < 0.3:
-                imageN = Augment.GeneratePerspective(imageN)
+                imageN = augment.perspective(imageN)
 
         imageN = imageN.astype('float32')
         imageN = (imageN-127.5)/127.5

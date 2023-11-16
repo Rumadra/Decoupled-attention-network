@@ -1,5 +1,4 @@
 # coding:utf-8
-from __future__ import print_function
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -148,6 +147,8 @@ if __name__ == '__main__':
             # net forward
             features = model[0](data)           
             A = model[1](features)
+            print(f'features={features[-1].size()}')
+            print(f'    A   ={A.size()}')
             output, attention_maps = model[2](features[-1], A, target, length)
             # computing accuracy and loss 
             train_acc_counter.add_iter(output, length.long(), length, label)

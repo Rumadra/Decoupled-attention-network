@@ -117,27 +117,31 @@ class CAM_transposed(nn.Module):
             assert not (scales[i-1][1] / scales[i][1]) % 1, 'layers scale error, from {} to {}'.format(i-1, i)
             assert not (scales[i-1][2] / scales[i][2]) % 1, 'layers scale error, from {} to {}'.format(i-1, i)
             ksize = [3,3,5] 
-            r_h, r_w = scales[i-1][1] / scales[i][1], scales[i-1][2] / scales[i][2]
-            ksize_h = 1 if scales[i-1][1] == 1 else ksize[r_h-1]
-            ksize_w = 1 if scales[i-1][2] == 1 else ksize[r_w-1]
+            r_h, r_w = int(scales[i-1][1] / scales[i][1]), int(scales[i-1][2] / scales[i][2])
+            ksize_h = 1 if scales[i-1][1] == 1 else ksize[int(r_h)-1]
+            ksize_w = 1 if scales[i-1][2] == 1 else ksize[int(r_w)-1]
             fpn.append(nn.Sequential(nn.Conv2d(scales[i-1][0], scales[i][0],
                                               (ksize_h, ksize_w), 
                                               (r_h, r_w),
-                                              ((ksize_h - 1)/2, (ksize_w - 1)/2)),
+                                              (int((ksize_h - 1)/2), int((ksize_w - 1)/2))),
                                      nn.BatchNorm2d(scales[i][0]),
                                      nn.ReLU(True)))
         fpn.append(nn.Sequential(nn.Conv2d(scales[i][0], 1,
                                           (1, ksize_w), 
                                           (1, r_w),
-                                          (0, (ksize_w - 1)/2)),
+                                          (0, int((ksize_w - 1)/2))),
                                  nn.Sigmoid()))
         self.fpn = nn.Sequential(*fpn)
         # convolutional alignment
+        # アップサンプリングのための新しい畳み込み層を追加
+        # self.upsample_conv = nn.Conv2d(1, num_channels, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        # self.upsample_bn = nn.BatchNorm2d(num_channels)
+        # self.upsample_relu = nn.ReLU(inplace=True)
         # deconvs
         in_shape = scales[-1]
         deconvs = []
         ksize_h = 1 if in_shape[1] == 1 else 4
-        for i in range(1, depth / 2):
+        for i in range(1, int(depth / 2)):
             deconvs.append(nn.Sequential(nn.ConvTranspose2d(num_channels, num_channels,
                                                            (ksize_h, 4),
                                                            (r_h, 2), 
@@ -150,17 +154,31 @@ class CAM_transposed(nn.Module):
                                                        (int(ksize_h/4.), 1)),
                                      nn.Sigmoid()))
         self.deconvs = nn.Sequential(*deconvs)
+
+
     def forward(self, input):
         x = input[0]
         for i in range(0, len(self.fpn) - 1):
             x = self.fpn[i](x) + input[i+1]
+
+        print(f"After FPN layer {i}: {x.size()}")  # デバッグ情報を出力
         # Reducing the input to 1-D form
         x = self.fpn[-1](x)
+
+        # 1チャンネルの特徴マップを128チャンネルにアップサンプリング
+        # x = self.upsample_conv(x)
+        # x = self.upsample_bn(x)
+        # x = self.upsample_relu(x)
+        # print(f"After upsample: {x.size()}")  # デバッグ情報を出力
+
         # Transpose B-C-H-W to B-W-C-H
         x = x.permute(0, 3, 1, 2).contiguous()
  
         for i in range(0, len(self.deconvs)):
             x = self.deconvs[i](x)
+        # for i, deconv_layer in enumerate(self.deconvs): # 修正
+        #     x = deconv_layer(x)
+            print(f"After Deconv layer {i}: {x.size()}")  # デバッグ情報を出力
         return x
 '''
 Decoupled Text Decoder
@@ -180,6 +198,9 @@ class DTD(nn.Module):
         self.char_embeddings = Parameter(torch.randn(nclass, nchannel))
 
     def forward(self, feature, A, text, text_length, test = False):
+        print(f'feature.size()={feature.size()}')
+        print(f'A.size() = {A.size()}')
+
         nB, nC, nH, nW = feature.size()
         nT = A.size()[1]
         # Normalize
@@ -187,6 +208,14 @@ class DTD(nn.Module):
         # weighted sum
         C = feature.view(nB, 1, nC, nH, nW) * A.view(nB, nT, 1, nH, nW)
         C = C.view(nB,nT,nC,-1).sum(3).transpose(1,0)
+        # # Aを[nB, nT, nH, nW]にreshapeする
+        # A = A.view(nB, nT, nH, nW)
+        # # featureにAを掛け算する前に、featureの次元を合わせる
+        # feature = feature.unsqueeze(1)  # [nB, 1, nC, nH, nW]
+        # # 要素ごとの積を計算
+        # C = feature * A[:, :, None, :, :]  # [nB, nT, nC, nH, nW]となるようにbroadcast
+        # # 最後に、nHとnWに沿って合計を行う
+        # C = C.sum(dim=[3, 4])  # [nB, nT, nC]となる
         C, _ = self.pre_lstm(C)
         C = F.dropout(C, p = 0.3, training=self.training)
         if not test:

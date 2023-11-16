@@ -115,16 +115,12 @@ saving_cfgs = {
 }
 
 def mkdir(path_):
-    paths = path_.split('/')
-    command_str = 'mkdir '
-    for i in range(0, len(paths) - 1):
-        command_str = command_str + paths[i] + '/'
-    command_str = command_str[0:-1]
-    os.system(command_str)
+    if not os.path.exists(path_):
+        os.makedirs(path_)
 
 def showcfgs(s):
     for key in s.keys():
-        print(key , s[key])
+        print(key, s[key])
     print('')
 
 mkdir(saving_cfgs['saving_path'])

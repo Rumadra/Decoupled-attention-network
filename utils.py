@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import cv2
 import json
 import editdistance as ed
 
@@ -11,7 +10,7 @@ class cha_encdec():
     def __init__(self, dict_file, case_sensitive = True):
         self.dict = []
         self.case_sensitive = case_sensitive
-        lines = open(dict_file , 'r').readlines()
+        lines = open(dict_file , 'r', encoding='utf-8').readlines()
         for line in lines:
             self.dict.append(line.replace('\n', ''))
     def encode(self, label_batch):
